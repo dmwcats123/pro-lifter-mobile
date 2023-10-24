@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { REACT_NATIVE_API_BASE_URL } from "@env";
-import CustomBackButton from "./BackButton";
+import CustomBackButton from "../Components/BackButton";
 
 const SignUpScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");

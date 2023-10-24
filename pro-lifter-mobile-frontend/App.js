@@ -1,7 +1,11 @@
-import React from "react";
+import React, { useState, useEffect, createContext, useContext } from "react";
 
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+``;
+export const AuthContext = createContext();
+
 import {
   StyleSheet,
   Text,
@@ -11,8 +15,11 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from "react-native";
-import LoginScreen from "./Components/LoginScreen.js";
-import SignUpScreen from "./Components/SignUpScreen.js";
+import LoginScreen from "./Views/LoginScreen.js";
+import SignUpScreen from "./Views/SignUpScreen.js";
+import NewWorkoutScreen from "./Views/NewWorkoutScreen.js";
+import HomeScreen from "./Views/HomeScreen.js";
+
 const Stack = createStackNavigator();
 
 function SplashScreen({ navigation }) {
@@ -39,26 +46,61 @@ function SplashScreen({ navigation }) {
   );
 }
 
-function HomeScreen() {
-  return (
-    <View>
-      <Text>Welcome to Home!</Text>
-    </View>
-  );
-}
-
 export default function App() {
+  const [isLoading, setIsLoading] = useState(true);
+  const [userToken, setUserToken] = useState(null);
+
+  const restoreToken = async () => {
+    const token = await AsyncStorage.getItem("userToken");
+    setIsLoading(false);
+    setUserToken(token);
+  };
+
+  useEffect(() => {
+    restoreToken();
+  }, []);
+
+  const authContext = React.useMemo(
+    () => ({
+      signIn: async (data) => {
+        setIsLoading(false);
+        setUserToken("dummy-auth-token");
+        await AsyncStorage.setItem("userToken", "dummy-auth-token");
+      },
+      signOut: async () => {
+        setIsLoading(false);
+        setUserToken(null);
+        await AsyncStorage.removeItem("userToken");
+      },
+    }),
+    []
+  );
+
+  if (isLoading) {
+    return <ActivityIndicator />;
+  }
+
   return (
-    <NavigationContainer>
-      <SafeAreaView style={styles.safeAreaContainer}>
-        <Stack.Navigator initialRouteName="Splash" headerMode="none">
-          <Stack.Screen name="Splash" component={SplashScreen} />
-          <Stack.Screen name="Home" component={HomeScreen} />
-          <Stack.Screen name="Login" component={LoginScreen} />
-          <Stack.Screen name="SignUp" component={SignUpScreen} />
-        </Stack.Navigator>
-      </SafeAreaView>
-    </NavigationContainer>
+    <AuthContext.Provider value={authContext}>
+      <NavigationContainer>
+        <SafeAreaView style={styles.safeAreaContainer}>
+          <Stack.Navigator initialRouteName="Splash" headerMode="none">
+            {userToken == null ? (
+              <>
+                <Stack.Screen name="Splash" component={SplashScreen} />
+                <Stack.Screen name="Login" component={LoginScreen} />
+                <Stack.Screen name="SignUp" component={SignUpScreen} />
+              </>
+            ) : (
+              <>
+                <Stack.Screen name="Home" component={HomeScreen} />
+                <Stack.Screen name="NewWorkout" component={NewWorkoutScreen} />
+              </>
+            )}
+          </Stack.Navigator>
+        </SafeAreaView>
+      </NavigationContainer>
+    </AuthContext.Provider>
   );
 }
 

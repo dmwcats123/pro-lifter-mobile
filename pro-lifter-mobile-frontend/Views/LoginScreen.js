@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import {
   View,
   TextInput,
@@ -7,12 +7,17 @@ import {
   TouchableOpacity,
 } from "react-native";
 import { REACT_NATIVE_API_BASE_URL } from "@env";
-import CustomBackButton from "./BackButton";
+import CustomBackButton from "../Components/BackButton";
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { AuthContext } from "../App.js";
 
 const LoginScreen = ({ navigation }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loginError, setLoginError] = useState("");
+  const { signIn } = useContext(AuthContext);
+
+  // Call signIn() when the user successfully logs in.
 
   const handleLogin = () => {
     fetch(`${REACT_NATIVE_API_BASE_URL}/Login`, {
@@ -25,11 +30,13 @@ const LoginScreen = ({ navigation }) => {
         password: password,
       }),
     })
-      .then((response) => {
-        if (response.status === 401) {
-          setLoginError("Log in failed. Please try again.");
+      .then((response) => response.json())
+      .then(async (data) => {
+        if (data.token) {
+          await AsyncStorage.setItem("userToken", data.token);
+          signIn();
         } else {
-          navigation.navigate("Home");
+          setLoginError("Login failed. Please try again.");
         }
       })
       .catch((error) => console.log(error));
