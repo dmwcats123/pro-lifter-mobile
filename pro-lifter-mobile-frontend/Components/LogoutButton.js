@@ -24,7 +24,7 @@ const LogoutButton = () => {
 
 const styles = StyleSheet.create({
   button: {
-    backgroundColor: "#4CAF50", // or any color you prefer
+    backgroundColor: "#34C759",
     paddingHorizontal: 10, // Horizontal padding
     paddingVertical: 5, // Vertical padding
     borderRadius: 5, // Rounded corners

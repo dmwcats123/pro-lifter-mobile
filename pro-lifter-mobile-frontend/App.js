@@ -62,10 +62,10 @@ export default function App() {
 
   const authContext = React.useMemo(
     () => ({
-      signIn: async (data) => {
+      signIn: async (token) => {
         setIsLoading(false);
-        setUserToken("dummy-auth-token");
-        await AsyncStorage.setItem("userToken", "dummy-auth-token");
+        setUserToken(token);
+        await AsyncStorage.setItem("userToken", token);
       },
       signOut: async () => {
         setIsLoading(false);

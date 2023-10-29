@@ -3,7 +3,14 @@ import { View, Text, TouchableOpacity, Modal, StyleSheet } from "react-native";
 import SingleFilter from "./SingleFilter";
 
 function FilterModal({ isVisible, onClose, onFiltersChange }) {
-  const workoutTypes = ["stretching", "cardio", "strength"];
+  const workoutTypes = [
+    "stretching",
+    "cardio",
+    "strength",
+    "strongman",
+    "plyometrics",
+    "powerlifting",
+  ];
   const equipmentTypes = [
     "machine",
     "dumbbell",

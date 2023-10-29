@@ -40,7 +40,6 @@ function ExerciseModal({ isVisible, onClose, addExercise }) {
     };
 
     fetchExercises();
-    console.log(filters);
   }, [filters]);
 
   const toggleFilterModal = () => {

@@ -34,7 +34,7 @@ const LoginScreen = ({ navigation }) => {
       .then(async (data) => {
         if (data.token) {
           await AsyncStorage.setItem("userToken", data.token);
-          signIn();
+          signIn(data.token);
         } else {
           setLoginError("Login failed. Please try again.");
         }
