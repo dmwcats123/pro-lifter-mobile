@@ -13,10 +13,11 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { REACT_NATIVE_API_BASE_URL } from "@env";
 import CustomBackButton from "../Components/BackButton";
 import ExerciseModal from "../Components/ExerciseModal";
-
+import ContextMenu from "../Components/ContextMenu";
 const NewWorkoutScreen = ({ navigation }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [workout, setWorkout] = useState([]);
+  const [workoutName, setWorkoutName] = useState("");
 
   const toggleModal = () => {
     setIsVisible(!isVisible);
@@ -149,7 +150,7 @@ const NewWorkoutScreen = ({ navigation }) => {
         Authorization: "Bearer " + token,
       },
       body: JSON.stringify({
-        workoutName: "Test Workout",
+        workoutName: workoutName,
         exercises: workout,
       }),
     })
@@ -158,6 +159,7 @@ const NewWorkoutScreen = ({ navigation }) => {
       })
       .catch((error) => console.log(error));
   };
+
   return (
     <View style={styles.container}>
       <View style={styles.topContent}>
@@ -165,6 +167,18 @@ const NewWorkoutScreen = ({ navigation }) => {
       </View>
 
       <View style={styles.mainContent}>
+        <TextInput
+          style={
+            workoutName != ""
+              ? [styles.workoutNameInput]
+              : [styles.workoutNameInput, styles.workoutNameInputPlaceholder]
+          }
+          placeholder={"Workout Name"}
+          value={workout.workoutName}
+          onChangeText={(text) => setWorkoutName(text)}
+          keyboardType="default"
+        />
+
         <View>
           <FlatList
             data={workout}
@@ -214,32 +228,13 @@ const NewWorkoutScreen = ({ navigation }) => {
                       {exercise.category == "stretching" && (
                         <Text style={{ marginLeft: 10 }}>Stretch Complete</Text>
                       )}
-                      <TouchableOpacity
-                        style={[
-                          styles.button,
-                          {
-                            backgroundColor: "#808080",
-                            padding: 3,
-                          },
-                        ]}
-                        onPress={() => editExercise(exerciseIndex)}
-                      >
-                        <Text style={styles.buttonText}>Edit</Text>
-                      </TouchableOpacity>
                     </View>
                   )}
-                  <TouchableOpacity
-                    style={[
-                      styles.button,
-                      {
-                        backgroundColor: "#ff5555",
-                        padding: 3,
-                      },
-                    ]}
-                    onPress={() => deleteExercise(exerciseIndex)}
-                  >
-                    <Text style={styles.buttonText}>Delete</Text>
-                  </TouchableOpacity>
+
+                  <ContextMenu
+                    onEdit={() => editExercise(exerciseIndex)}
+                    onDelete={() => deleteExercise(exerciseIndex)}
+                  />
                 </View>
                 {!exercise.isSaved && (
                   <View style={{ width: "100%" }}>
@@ -525,6 +520,19 @@ const styles = StyleSheet.create({
     justifyContent: "space-between", // Space between exerciseName and edit button
     alignItems: "center", // Align items vertically in the center
     width: "100%", // Take the full width of the parent component
+  },
+  workoutNameInput: {
+    fontSize: 30, // Larger font size
+    fontWeight: "bold", // Bold font weight
+    borderBottomWidth: 1, // Only a bottom border
+    borderBottomColor: "gray", // Border color
+    marginBottom: 20, // More margin at the bottom
+    width: "100%", // Full width
+    paddingHorizontal: 5, // Some padding on the sides
+  },
+  workoutNameInputPlaceholder: {
+    fontStyle: "italic",
+    color: "gray",
   },
 });
 

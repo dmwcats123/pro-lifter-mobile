@@ -9,9 +9,17 @@ import {
 import { REACT_NATIVE_API_BASE_URL } from "@env";
 import LogoutButton from "../Components/LogoutButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
+import WorkoutModal from "../Components/WorkoutModal";
+import ContextMenu from "../Components/ContextMenu";
 
 const HomeScreen = ({ navigation }) => {
   const [workouts, setWorkouts] = useState([]);
+  const [workoutModalVisible, setWorkoutModalVisible] = useState(false);
+  const [workoutModalData, setWorkoutModalData] = useState({});
+
+  // useEffect(() => {
+  //   console.log(workoutModalData);
+  // }, [workoutModalData]);
 
   const getWorkouts = async () => {
     const token = await AsyncStorage.getItem("userToken");
@@ -30,9 +38,40 @@ const HomeScreen = ({ navigation }) => {
     getWorkouts();
   }, []);
 
-  const renderWorkouts = ({ item }) => (
-    <TouchableOpacity style={styles.workoutCard}>
-      <Text style={styles.workoutTitle}>{item.workoutName}</Text>
+  const deleteWorkout = async (index) => {
+    const token = await AsyncStorage.getItem("userToken");
+    const response = await fetch(
+      `${REACT_NATIVE_API_BASE_URL}/workouts/${workouts[index]._id}`,
+      {
+        method: "DELETE",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: "Bearer " + token,
+        },
+      }
+    );
+    const data = await response.json();
+    if (data.success) {
+      getWorkouts();
+    }
+  };
+
+  const renderWorkouts = ({ item, index }) => (
+    <TouchableOpacity
+      style={styles.workoutCard}
+      onPress={() => {
+        setWorkoutModalData(item);
+        setWorkoutModalVisible(true);
+      }}
+    >
+      <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
+        <Text style={styles.workoutTitle}>{item.workoutName}</Text>
+        <ContextMenu
+          onEdit={() => console.log("edit clicked")}
+          onDelete={() => deleteWorkout(index)}
+          isSaved={true}
+        />
+      </View>
       <FlatList data={item.exercises} renderItem={renderExercises} />
     </TouchableOpacity>
   );
@@ -83,6 +122,11 @@ const HomeScreen = ({ navigation }) => {
       >
         <Text style={styles.startButtonText}>Start a new Workout!</Text>
       </TouchableOpacity>
+      <WorkoutModal
+        isVisible={workoutModalVisible}
+        onClose={() => setWorkoutModalVisible(false)}
+        workout={workoutModalData}
+      />
     </View>
   );
 };
