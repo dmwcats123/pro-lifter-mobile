@@ -1,8 +1,15 @@
 import { useState, useEffect } from "react";
-import { View, Text, TouchableOpacity, Modal, StyleSheet } from "react-native";
+import {
+  ScrollView,
+  View,
+  Text,
+  TouchableOpacity,
+  Modal,
+  StyleSheet,
+} from "react-native";
 import SingleFilter from "./SingleFilter";
 
-function FilterModal({ isVisible, onClose, onFiltersChange }) {
+function FilterModal({ isVisible, onClose, onFiltersChange, selectedFilters }) {
   const workoutTypes = [
     "stretching",
     "cardio",
@@ -36,8 +43,15 @@ function FilterModal({ isVisible, onClose, onFiltersChange }) {
       }
     };
 
+    selectedFilters.equipmentType &&
+      setSelectedEquipmentTypes(selectedFilters.equipmentType);
+    selectedFilters.primaryMuscle &&
+      setSelectedMuscleGroups(selectedFilters.primaryMuscle);
+    selectedFilters.workoutType &&
+      setSelectedWorkoutTypes(selectedFilters.workoutType);
+
     fetchMuscleGroups();
-  }, []);
+  }, [selectedMuscleGroups]);
 
   const workoutFilterClicked = (workoutType) => {
     setSelectedWorkoutTypes((prevWorkoutTypes) =>
@@ -72,36 +86,29 @@ function FilterModal({ isVisible, onClose, onFiltersChange }) {
       visible={isVisible}
       onRequestClose={onClose}
     >
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <View
-          style={{
-            maxWidth: "90%",
-            maxHeight: "90%",
-            backgroundColor: "white",
-            borderColor: "black",
-            borderRadius: 10,
-            borderWidth: 1,
-            padding: 10, // Add padding
-          }}
-        >
-          <SingleFilter
-            title="Workout Type"
-            items={workoutTypes}
-            selectedItems={selectedWorkoutTypes}
-            onItemPress={workoutFilterClicked}
-          />
-          <SingleFilter
-            title="Equipment Type"
-            items={equipmentTypes}
-            selectedItems={selectedEquipmentTypes}
-            onItemPress={equipmentFilterClicked}
-          />
-          <SingleFilter
-            title="Muscle Groups"
-            items={muscleGroups}
-            selectedItems={selectedMuscleGroups}
-            onItemPress={muscleFilterClicked}
-          />
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <ScrollView style={{ flex: 1 }}>
+            <SingleFilter
+              title="Workout Type"
+              items={workoutTypes}
+              selectedItems={selectedWorkoutTypes}
+              onItemPress={workoutFilterClicked}
+            />
+            <SingleFilter
+              title="Equipment Type"
+              items={equipmentTypes}
+              selectedItems={selectedEquipmentTypes}
+              onItemPress={equipmentFilterClicked}
+            />
+            <SingleFilter
+              title="Muscle Groups"
+              items={muscleGroups}
+              selectedItems={selectedMuscleGroups}
+              onItemPress={muscleFilterClicked}
+            />
+            {/* ... other filters */}
+          </ScrollView>
           <TouchableOpacity style={styles.button} onPress={onClose}>
             <Text style={styles.buttonText}>Close</Text>
           </TouchableOpacity>
@@ -118,13 +125,14 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   modalContent: {
-    width: "60%",
-    height: "40%",
+    maxWidth: "90%",
+    minHeight: "65%",
+    maxHeight: "90%",
     backgroundColor: "white",
     borderColor: "black",
     borderRadius: 10,
     borderWidth: 1,
-    padding: 10,
+    padding: 10, // Add padding
   },
   textDisabled: {
     color: "grey",

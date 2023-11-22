@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useState } from "react";
 import {
   View,
   Text,
@@ -11,11 +11,15 @@ import LogoutButton from "../Components/LogoutButton";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import WorkoutModal from "../Components/WorkoutModal";
 import ContextMenu from "../Components/ContextMenu";
+import { useFocusEffect } from "@react-navigation/native";
+import TemplateModal from "../Components/TemplateModal";
 
 const HomeScreen = ({ navigation }) => {
   const [workouts, setWorkouts] = useState([]);
   const [workoutModalVisible, setWorkoutModalVisible] = useState(false);
   const [workoutModalData, setWorkoutModalData] = useState({});
+  const [templateModalVisible, setTemplateModalVisible] = useState(false);
+  const [templates, setTemplates] = useState(null);
 
   // useEffect(() => {
   //   console.log(workoutModalData);
@@ -34,25 +38,58 @@ const HomeScreen = ({ navigation }) => {
     setWorkouts(data.workouts);
   };
 
-  useEffect(() => {
-    getWorkouts();
-  }, []);
-
-  const deleteWorkout = async (index) => {
+  const getTemplates = async () => {
     const token = await AsyncStorage.getItem("userToken");
-    const response = await fetch(
-      `${REACT_NATIVE_API_BASE_URL}/workouts/${workouts[index]._id}`,
-      {
-        method: "DELETE",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: "Bearer " + token,
-        },
-      }
-    );
+    const response = await fetch(`${REACT_NATIVE_API_BASE_URL}/templates`, {
+      method: "GET",
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: "Bearer " + token,
+      },
+    });
     const data = await response.json();
-    if (data.success) {
+    setTemplates(data.templates);
+  };
+
+  useFocusEffect(
+    useCallback(() => {
       getWorkouts();
+      getTemplates();
+      return () => {
+        setWorkouts([]);
+        setTemplates([]);
+      };
+    }, [])
+  );
+
+  const deleteWorkout = async (workoutId) => {
+    try {
+      const token = await AsyncStorage.getItem("userToken");
+      const response = await fetch(
+        `${REACT_NATIVE_API_BASE_URL}/workouts/${workoutId}`,
+        {
+          method: "DELETE",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: "Bearer " + token,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error("Failed to delete the workout.");
+      }
+
+      const data = await response.json();
+
+      if (data.success) {
+        setWorkouts((currentWorkouts) =>
+          currentWorkouts.filter((workout) => workout._id !== workoutId)
+        );
+      }
+    } catch (error) {
+      console.error(error);
+      // You might want to display an error message to the user.
     }
   };
 
@@ -67,8 +104,12 @@ const HomeScreen = ({ navigation }) => {
       <View style={{ flexDirection: "row", justifyContent: "space-between" }}>
         <Text style={styles.workoutTitle}>{item.workoutName}</Text>
         <ContextMenu
-          onEdit={() => console.log("edit clicked")}
-          onDelete={() => deleteWorkout(index)}
+          onEdit={() =>
+            navigation.navigate("NewWorkout", {
+              workout: item,
+            })
+          }
+          onDelete={() => deleteWorkout(item._id)} // pass the item's _id directly
           isSaved={true}
         />
       </View>
@@ -109,15 +150,15 @@ const HomeScreen = ({ navigation }) => {
       <View style={styles.header}>
         <LogoutButton />
       </View>
-      <View style={{ flex: 1, alignSelf: "center", width: "67.5%" }}>
-        <FlatList
-          data={workouts}
-          renderItem={renderWorkouts}
-          contentContainerStyle={styles.workoutList}
-        />
-      </View>
+      <FlatList
+        data={workouts}
+        renderItem={renderWorkouts}
+        keyExtractor={(item) => item._id.toString()}
+        contentContainerStyle={[styles.workoutList, { paddingBottom: 80 }]}
+        style={{ flex: 1 }}
+      />
       <TouchableOpacity
-        onPress={() => navigation.navigate("NewWorkout")}
+        onPress={() => setTemplateModalVisible(true)}
         style={styles.startButton}
       >
         <Text style={styles.startButtonText}>Start a new Workout!</Text>
@@ -127,6 +168,12 @@ const HomeScreen = ({ navigation }) => {
         onClose={() => setWorkoutModalVisible(false)}
         workout={workoutModalData}
       />
+      <TemplateModal
+        navigation={navigation}
+        isVisible={templateModalVisible}
+        onClose={() => setTemplateModalVisible(false)}
+        templates={templates}
+      />
     </View>
   );
 };
@@ -134,7 +181,7 @@ const HomeScreen = ({ navigation }) => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    paddingHorizontal: 15,
+    paddingHorizontal: 40,
     backgroundColor: "#f4f4f8",
   },
   header: {
@@ -200,6 +247,22 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#666",
     marginRight: 10, // added some margin for spacing between details
+  },
+  startButton: {
+    position: "absolute", // Add absolute positioning
+    bottom: 10, // Distance from the bottom of the screen
+    left: 10, // Distance from the left side of the screen
+    right: 10, // Distance from the right side of the screen
+    backgroundColor: "#34C759",
+    borderRadius: 8,
+    padding: 15,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  startButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "600",
   },
 });
 

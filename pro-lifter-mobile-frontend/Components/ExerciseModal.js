@@ -65,11 +65,13 @@ function ExerciseModal({ isVisible, onClose, addExercise }) {
       ) {
         if (prevFilters[filterType]?.includes(value)) {
           // If value is already in the filter array, remove it
+          const updatedFilters = prevFilters[filterType].filter(
+            (type) => type !== value
+          );
+
           return {
             ...prevFilters,
-            [filterType]: prevFilters[filterType].filter(
-              (type) => type !== value
-            ),
+            [filterType]: updatedFilters.length ? updatedFilters : null, // if array is empty set it to null
           };
         } else {
           // If value is not in the filter array, add it
@@ -129,6 +131,7 @@ function ExerciseModal({ isVisible, onClose, addExercise }) {
                 isVisible={filterModalVisible}
                 onClose={toggleFilterModal}
                 onFiltersChange={handleFiltersChange}
+                selectedFilters={filters}
               />
               <FlatList
                 data={filteredExercises}

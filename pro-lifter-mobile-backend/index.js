@@ -68,6 +68,7 @@ const userSchema = new mongoose.Schema({
     default: Date.now,
   },
   workouts: [workoutSchema],
+  templates: [workoutSchema], // New array for templates
 });
 
 const User = mongoose.model("User", userSchema);
@@ -191,6 +192,30 @@ app.get("/workouts", async (req, res) => {
   });
 });
 
+app.get("/templates", (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ message: "No token provided" });
+  }
+
+  const token = authHeader.split(" ")[1]; // Bearer <token>
+  jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+
+    const userId = decoded.userId;
+    try {
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      res.json({ templates: user.templates });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+});
 app.delete("/workouts/:id", async (req, res) => {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
@@ -228,7 +253,125 @@ app.delete("/workouts/:id", async (req, res) => {
 
       res.json({ success: true });
     } catch (error) {
-      console.error(error); // Log the detailed error
+      res.status(500).json({ message: error.message });
+    }
+  });
+});
+
+app.post("/UpdateWorkout", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ message: "No token provided" });
+  }
+
+  const token = authHeader.split(" ")[1]; // Bearer <token>
+  jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+
+    const userId = decoded.userId;
+    const { id, workoutName, exercises } = req.body;
+
+    try {
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Find the specific workout in the user's workouts array
+      const workoutToUpdate = user.workouts.id(id);
+
+      // If the workout is not found, return a 404 error
+      if (!workoutToUpdate) {
+        return res.status(404).json({ message: "Workout not found" });
+      }
+
+      // Update the workout details
+      workoutToUpdate.workoutName = workoutName;
+      workoutToUpdate.exercises = exercises;
+
+      // Save the user with the modified workouts array
+      await user.save();
+
+      res.json({ message: "Workout updated successfully!" });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+});
+
+app.post("/SaveTemplate", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ message: "No token provided" });
+  }
+
+  const token = authHeader.split(" ")[1];
+  jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+
+    const userId = decoded.userId;
+    try {
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      user.templates.push(req.body);
+
+      await user.save();
+
+      res.json({ message: "Template saved successfully!" });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+});
+
+// Endpoint to update an existing workout template
+app.post("/UpdateTemplate", async (req, res) => {
+  // Update logic is almost identical to the UpdateWorkout, but it updates the template.
+  // You can extract and reuse the logic as a function if there's a lot of duplication.
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ message: "No token provided" });
+  }
+
+  const token = authHeader.split(" ")[1]; // Bearer <token>
+  jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+
+    const userId = decoded.userId;
+    const { id, workoutName, exercises } = req.body;
+
+    try {
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      // Find the specific workout in the user's workouts array
+      const workoutToUpdate = user.templates.id(id);
+
+      // If the workout is not found, return a 404 error
+      if (!workoutToUpdate) {
+        return res.status(404).json({ message: "Template not found" });
+      }
+
+      // Update the workout details
+      workoutToUpdate.workoutName = workoutName;
+      workoutToUpdate.exercises = exercises;
+
+      // Save the user with the modified workouts array
+      await user.save();
+
+      res.json({ message: "Workout updated successfully!" });
+    } catch (error) {
       res.status(500).json({ message: error.message });
     }
   });

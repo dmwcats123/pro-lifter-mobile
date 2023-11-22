@@ -14,10 +14,35 @@ import { REACT_NATIVE_API_BASE_URL } from "@env";
 import CustomBackButton from "../Components/BackButton";
 import ExerciseModal from "../Components/ExerciseModal";
 import ContextMenu from "../Components/ContextMenu";
-const NewWorkoutScreen = ({ navigation }) => {
+const NewWorkoutScreen = ({ route, navigation }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [workout, setWorkout] = useState([]);
   const [workoutName, setWorkoutName] = useState("");
+  const [workoutID, setWorkoutID] = useState(null);
+  const [isNewTemplate, setIsNewTemplate] = useState(null);
+  const [fromTemplate, setFromTemplate] = useState(null);
+
+  useEffect(() => {
+    let initialWorkout = [];
+    if (route.params && route.params.workout) {
+      const { workout } = route.params;
+      setWorkoutID(workout._id);
+      setWorkoutName(workout.workoutName);
+      initialWorkout = workout.exercises;
+    }
+
+    if (route.params && route.params.isNewTemplate) {
+      setIsNewTemplate(route.params.isNewTemplate);
+    }
+    if (route.params && route.params.fromTemplate) {
+      setFromTemplate(route.params.fromTemplate);
+      initialWorkout = initialWorkout.map((exercise) => ({
+        ...exercise,
+        isSaved: false,
+      }));
+    }
+    setWorkout(initialWorkout);
+  }, [route.params]);
 
   const toggleModal = () => {
     setIsVisible(!isVisible);
@@ -52,7 +77,6 @@ const NewWorkoutScreen = ({ navigation }) => {
     if (newExercise.category === "stretching") {
       newExercise.isSaved = true;
     }
-    console.log(newExercise);
     setWorkout((prevWorkout) => [...prevWorkout, newExercise]);
   };
   const addSet = (index) => {
@@ -130,7 +154,10 @@ const NewWorkoutScreen = ({ navigation }) => {
   };
   const editExercise = (exerciseIndex) => {
     const newWorkout = [...workout];
-    newWorkout[exerciseIndex].isSaved = false;
+    newWorkout[exerciseIndex] = {
+      ...newWorkout[exerciseIndex],
+      isSaved: false,
+    };
     setWorkout(newWorkout);
   };
 
@@ -141,9 +168,20 @@ const NewWorkoutScreen = ({ navigation }) => {
   };
 
   const saveWorkout = async () => {
+    const isWorkoutComplete = workout.every((exercise) => exercise.isSaved);
+
+    if (!isWorkoutComplete) {
+      // If the workout is incomplete, display an error message to the user
+      alert(
+        "Please ensure all exercises are complete before saving the workout."
+      );
+      return; // Exit the function early
+    }
+    // Get the token from storage
     const token = await AsyncStorage.getItem("userToken");
 
-    fetch(`${REACT_NATIVE_API_BASE_URL}/SaveWorkout`, {
+    // Define the header and request method
+    const requestOptions = {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
@@ -152,12 +190,39 @@ const NewWorkoutScreen = ({ navigation }) => {
       body: JSON.stringify({
         workoutName: workoutName,
         exercises: workout,
+        // Include the id only if updating (assuming id is not used for creating a new workout)
+        ...(workoutID && !fromTemplate ? { id: workoutID } : {}),
       }),
-    })
-      .then((response) => {
-        return response.json();
-      })
-      .catch((error) => console.log(error));
+    };
+
+    try {
+      // Conditional path based on whether you have a workout ID
+      let path;
+      if (isNewTemplate) {
+        path = workoutID ? "UpdateTemplate" : "SaveTemplate";
+      } else if (fromTemplate) {
+        path = "SaveWorkout";
+      } else {
+        path = workoutID ? "UpdateWorkout" : "SaveWorkout";
+      }
+      const response = await fetch(
+        `${REACT_NATIVE_API_BASE_URL}/${path}`,
+        requestOptions
+      );
+
+      // Check the response status code before assuming success
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      } else {
+        const data = await response.json();
+
+        // Consider verifying success via the 'data' object before navigation.
+        navigation.goBack(); // Or navigate to the 'Home' screen as needed.
+      }
+    } catch (error) {
+      console.error("There was an error saving the workout", error);
+      // Handle the error in UI, maybe show a toast notification or alert.
+    }
   };
 
   return (
@@ -174,7 +239,7 @@ const NewWorkoutScreen = ({ navigation }) => {
               : [styles.workoutNameInput, styles.workoutNameInputPlaceholder]
           }
           placeholder={"Workout Name"}
-          value={workout.workoutName}
+          value={workoutName}
           onChangeText={(text) => setWorkoutName(text)}
           keyboardType="default"
         />
@@ -234,6 +299,7 @@ const NewWorkoutScreen = ({ navigation }) => {
                   <ContextMenu
                     onEdit={() => editExercise(exerciseIndex)}
                     onDelete={() => deleteExercise(exerciseIndex)}
+                    isSaved={exercise.isSaved}
                   />
                 </View>
                 {!exercise.isSaved && (
@@ -262,6 +328,7 @@ const NewWorkoutScreen = ({ navigation }) => {
                               >
                                 Weight:
                               </Text>
+
                               <TextInput
                                 style={styles.input}
                                 value={
@@ -271,7 +338,7 @@ const NewWorkoutScreen = ({ navigation }) => {
                                     ? ""
                                     : workout[exerciseIndex].weightPerSet[
                                         setIndex
-                                      ]
+                                      ].toString()
                                 }
                                 onChangeText={(text) =>
                                   handleWeightChange(
@@ -299,7 +366,7 @@ const NewWorkoutScreen = ({ navigation }) => {
                                     ? ""
                                     : workout[exerciseIndex].repsPerSet[
                                         setIndex
-                                      ]
+                                      ].toString()
                                 }
                                 onChangeText={(text) =>
                                   handleRepsChange(
@@ -439,10 +506,18 @@ const NewWorkoutScreen = ({ navigation }) => {
       </View>
       <View style={styles.footer}>
         <TouchableOpacity
-          onPress={() => saveWorkout(workout)}
+          onPress={() => {
+            saveWorkout();
+          }}
           style={styles.button}
         >
-          <Text style={styles.buttonText}>Log current Workout!</Text>
+          <Text style={styles.buttonText}>
+            {isNewTemplate
+              ? "Save Template!"
+              : workoutID && !fromTemplate
+              ? "Update workout"
+              : "Log current Workout!"}
+          </Text>
         </TouchableOpacity>
       </View>
     </View>
