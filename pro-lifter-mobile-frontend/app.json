@@ -1,6 +1,7 @@
 {
   "expo": {
     "name": "pro-lifter-mobile",
+    "owner": "dmwcats",
     "slug": "pro-lifter-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -11,9 +12,7 @@
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
-    "assetBundlePatterns": [
-      "**/*"
-    ],
+    "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true
     },
