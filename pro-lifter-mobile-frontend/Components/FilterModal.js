@@ -8,6 +8,7 @@ import {
   StyleSheet,
 } from "react-native";
 import SingleFilter from "./SingleFilter";
+import { REACT_NATIVE_API_BASE_URL } from "@env";
 
 function FilterModal({ isVisible, onClose, onFiltersChange, selectedFilters }) {
   const workoutTypes = [
@@ -34,7 +35,7 @@ function FilterModal({ isVisible, onClose, onFiltersChange, selectedFilters }) {
   useEffect(() => {
     const fetchMuscleGroups = async () => {
       try {
-        const response = await fetch("http://localhost:3000/muscles");
+        const response = await fetch(REACT_NATIVE_API_BASE_URL + "/muscles");
         const data = await response.json();
 
         setMuscleGroups(data);

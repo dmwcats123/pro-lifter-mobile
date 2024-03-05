@@ -19,6 +19,7 @@ import LoginScreen from "./Views/LoginScreen.js";
 import SignUpScreen from "./Views/SignUpScreen.js";
 import NewWorkoutScreen from "./Views/NewWorkoutScreen.js";
 import HomeScreen from "./Views/HomeScreen.js";
+import GraphScreen from "./Views/GraphScreen.js";
 
 const Stack = createStackNavigator();
 
@@ -95,6 +96,7 @@ export default function App() {
               <>
                 <Stack.Screen name="Home" component={HomeScreen} />
                 <Stack.Screen name="NewWorkout" component={NewWorkoutScreen} />
+                <Stack.Screen name="Graphs" component={GraphScreen} />
               </>
             )}
           </Stack.Navigator>

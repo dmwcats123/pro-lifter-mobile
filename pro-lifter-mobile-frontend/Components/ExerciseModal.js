@@ -12,6 +12,8 @@ import {
 } from "react-native";
 import FilterModal from "./FilterModal";
 import SingleExerciseModal from "./SingleExcercise";
+import { REACT_NATIVE_API_BASE_URL } from "@env";
+
 function ExerciseModal({ isVisible, onClose, addExercise }) {
   const [exercises, setExercises] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -28,7 +30,7 @@ function ExerciseModal({ isVisible, onClose, addExercise }) {
   useEffect(() => {
     const fetchExercises = async () => {
       try {
-        const response = await fetch("http://localhost:3000/exercises");
+        const response = await fetch(REACT_NATIVE_API_BASE_URL + "/exercises");
         const data = await response.json();
 
         setExercises(data.exercises);

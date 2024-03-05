@@ -229,6 +229,7 @@ app.delete("/workouts/:id", async (req, res) => {
     }
 
     const userId = decoded.userId;
+
     try {
       const user = await User.findById(userId);
       if (!user) {
@@ -377,6 +378,34 @@ app.post("/UpdateTemplate", async (req, res) => {
   });
 });
 
+app.post("/SingleExerciseData", async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ message: "No token provided" });
+  }
+
+  const token = authHeader.split(" ")[1]; // Bearer <token>
+  jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
+    if (err) {
+      return res.status(401).json({ message: "Invalid token" });
+    }
+    const userId = decoded.userId;
+    try {
+      const user = await User.findById(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      const exercise = req.body.exerciseName;
+      const exerciseData = user.workouts
+        .map((workout) => workout.exercises)
+        .flat()
+        .filter((ex) => ex.name === exercise);
+      res.json({ exerciseData });
+    } catch (error) {
+      res.status(500).json({ message: error.message });
+    }
+  });
+});
 app.listen(port, () => {
   console.log(`listening at http://localhost:${port}`);
 });
