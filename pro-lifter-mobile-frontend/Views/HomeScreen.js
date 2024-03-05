@@ -13,6 +13,7 @@ import WorkoutModal from "../Components/WorkoutModal";
 import ContextMenu from "../Components/ContextMenu";
 import { useFocusEffect } from "@react-navigation/native";
 import TemplateModal from "../Components/TemplateModal";
+import Navbar from "../Components/Navbar";
 
 const HomeScreen = ({ navigation }) => {
   const [workouts, setWorkouts] = useState([]);
@@ -146,39 +147,46 @@ const HomeScreen = ({ navigation }) => {
     </View>
   );
   return (
-    <View style={styles.container}>
-      <View style={styles.header}>
-        <LogoutButton />
+    <View style={styles.fullContainer}>
+      <View style={styles.container}>
+        <View style={styles.header}>
+          <LogoutButton />
+        </View>
+        <FlatList
+          data={workouts}
+          renderItem={renderWorkouts}
+          keyExtractor={(item) => item._id.toString()}
+          contentContainerStyle={[styles.workoutList, { paddingBottom: 80 }]}
+          style={{ flex: 1 }}
+        />
+        <TouchableOpacity
+          onPress={() => setTemplateModalVisible(true)}
+          style={styles.startButton}
+        >
+          <Text style={styles.startButtonText}>Start a new Workout!</Text>
+        </TouchableOpacity>
+        <WorkoutModal
+          isVisible={workoutModalVisible}
+          onClose={() => setWorkoutModalVisible(false)}
+          workout={workoutModalData}
+        />
+        <TemplateModal
+          navigation={navigation}
+          isVisible={templateModalVisible}
+          onClose={() => setTemplateModalVisible(false)}
+          templates={templates}
+        />
       </View>
-      <FlatList
-        data={workouts}
-        renderItem={renderWorkouts}
-        keyExtractor={(item) => item._id.toString()}
-        contentContainerStyle={[styles.workoutList, { paddingBottom: 80 }]}
-        style={{ flex: 1 }}
-      />
-      <TouchableOpacity
-        onPress={() => setTemplateModalVisible(true)}
-        style={styles.startButton}
-      >
-        <Text style={styles.startButtonText}>Start a new Workout!</Text>
-      </TouchableOpacity>
-      <WorkoutModal
-        isVisible={workoutModalVisible}
-        onClose={() => setWorkoutModalVisible(false)}
-        workout={workoutModalData}
-      />
-      <TemplateModal
-        navigation={navigation}
-        isVisible={templateModalVisible}
-        onClose={() => setTemplateModalVisible(false)}
-        templates={templates}
-      />
+      <Navbar navigation={navigation} />
     </View>
   );
 };
 
 const styles = StyleSheet.create({
+  fullContainer: {
+    flex: 1, // Ensures the full container takes up the entire screen
+    backgroundColor: "#f4f4f8",
+  },
   container: {
     flex: 1,
     paddingHorizontal: 40,
@@ -188,6 +196,19 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     justifyContent: "flex-end",
     paddingVertical: 10,
+  },
+  navBar: {
+    flexDirection: "row",
+    justifyContent: "center",
+    height: 50,
+    backgroundColor: "#a3c4f3",
+    alignSelf: "stretch",
+    padding: 1,
+  },
+  navItem: {
+    flex: 1,
+    alignItems: "center",
+
   },
   workoutCard: {
     backgroundColor: "#fff",
