@@ -137,7 +137,8 @@ const HomeScreen = ({ navigation }) => {
             <Text style={styles.detailText}>
               Volume:{" "}
               {item.weightPerSet.reduce(
-                (total, weight) => total + Number(weight),
+                (total, weight, index) =>
+                  total + Number(weight) * item.repsPerSet[index],
                 0
               )}
             </Text>
@@ -208,7 +209,6 @@ const styles = StyleSheet.create({
   navItem: {
     flex: 1,
     alignItems: "center",
-
   },
   workoutCard: {
     backgroundColor: "#fff",

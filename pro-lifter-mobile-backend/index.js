@@ -396,16 +396,60 @@ app.post("/SingleExerciseData", async (req, res) => {
         return res.status(404).json({ message: "User not found" });
       }
       const exercise = req.body.exerciseName;
+      const volWeightId = req.body.volWeightId;
+      const avgMaxId = req.body.avgMaxId;
       const exerciseData = user.workouts
-        .map((workout) => workout.exercises)
-        .flat()
-        .filter((ex) => ex.name === exercise);
+        .map((workout) => {
+          return workout.exercises
+            .filter((ex) => ex.name === exercise)
+            .map((ex) => {
+              let result = {};
+              const calculateVolume = volWeightId === "vol";
+              const totalVolume = ex.weightPerSet.reduce(
+                (acc, weight, index) => acc + weight * ex.repsPerSet[index],
+                0
+              );
+              if (calculateVolume) {
+                if (avgMaxId === "avg") {
+                  result.averageVol =
+                    ex.weightPerSet.length > 0
+                      ? totalVolume / ex.weightPerSet.length
+                      : 0;
+                }
+                if (avgMaxId === "max") {
+                  const maxVolume = Math.max(
+                    ...ex.weightPerSet.map(
+                      (weight, index) => weight * ex.repsPerSet[index]
+                    )
+                  );
+                  result.maxVol = maxVolume;
+                }
+              } else {
+                if (avgMaxId === "avg") {
+                  result.averageWeight =
+                    ex.weightPerSet.length > 0
+                      ? totalVolume /
+                        ex.repsPerSet.reduce((acc, reps) => acc + reps, 0)
+                      : 0;
+                }
+                if (avgMaxId === "max") {
+                  const maxWeight = Math.max(...ex.weightPerSet);
+                  result.maxWeight = maxWeight;
+                }
+              }
+
+              result.workoutCreatedAt = workout.createdAt;
+              return result;
+            });
+        })
+        .flat(); // Flatten the array if needed
       res.json({ exerciseData });
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
   });
 });
+
 app.listen(port, () => {
   console.log(`listening at http://localhost:${port}`);
 });

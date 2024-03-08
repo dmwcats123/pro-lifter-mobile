@@ -4,8 +4,11 @@ import { LineChart } from "react-native-chart-kit";
 import { REACT_NATIVE_API_BASE_URL } from "@env";
 import ExerciseModal from "../Components/ExerciseModal";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-const GraphScreen = () => {
+import Navbar from "../Components/Navbar";
+
+const GraphScreen = ({ navigation }) => {
   const [selectionVisibility, setSelectionVisibility] = useState(false);
+  const [exerciseData, setExcerciseData] = useState({});
 
   const addExercise = async (exercise) => {
     const token = await AsyncStorage.getItem("userToken");
@@ -20,15 +23,17 @@ const GraphScreen = () => {
           },
           body: JSON.stringify({
             exerciseName: exercise.name,
+            volWeightId: "weight",
+            avgMaxId: "avg",
           }),
         }
       );
-      console.log("Exercise added!", exercise);
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       } else {
-        const data = await response.json();
-        console.log(data);
+        const rawData = await response.json();
+        console.log(rawData.exerciseData);
+        setExcerciseData(rawData.exerciseData);
       }
     } catch (error) {
       console.error("Error:", error);
@@ -55,6 +60,7 @@ const GraphScreen = () => {
         onClose={() => setSelectionVisibility(false)}
         addExercise={addExercise}
       />
+      <Navbar navigation={navigation} />
     </View>
   );
 };
