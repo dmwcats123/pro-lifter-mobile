@@ -22,6 +22,7 @@ const HomeScreen = ({ navigation }) => {
   const [templateModalVisible, setTemplateModalVisible] = useState(false);
   const [templates, setTemplates] = useState(null);
 
+  const reversed = [...workouts].reverse();
   // useEffect(() => {
   //   console.log(workoutModalData);
   // }, [workoutModalData]);
@@ -154,7 +155,7 @@ const HomeScreen = ({ navigation }) => {
           <LogoutButton />
         </View>
         <FlatList
-          data={workouts}
+          data={reversed}
           renderItem={renderWorkouts}
           keyExtractor={(item) => item._id.toString()}
           contentContainerStyle={[styles.workoutList, { paddingBottom: 80 }]}

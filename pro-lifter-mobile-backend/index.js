@@ -411,7 +411,7 @@ app.post("/SingleExerciseData", async (req, res) => {
               );
               if (calculateVolume) {
                 if (avgMaxId === "avg") {
-                  result.averageVol =
+                  result.data = //averageVol
                     ex.weightPerSet.length > 0
                       ? totalVolume / ex.weightPerSet.length
                       : 0;
@@ -422,11 +422,11 @@ app.post("/SingleExerciseData", async (req, res) => {
                       (weight, index) => weight * ex.repsPerSet[index]
                     )
                   );
-                  result.maxVol = maxVolume;
+                  result.data = maxVolume; //maxVol
                 }
               } else {
                 if (avgMaxId === "avg") {
-                  result.averageWeight =
+                  result.data = //averageWeight
                     ex.weightPerSet.length > 0
                       ? totalVolume /
                         ex.repsPerSet.reduce((acc, reps) => acc + reps, 0)
@@ -434,11 +434,13 @@ app.post("/SingleExerciseData", async (req, res) => {
                 }
                 if (avgMaxId === "max") {
                   const maxWeight = Math.max(...ex.weightPerSet);
-                  result.maxWeight = maxWeight;
+                  result.data = maxWeight; //maxWeight
                 }
               }
 
-              result.workoutCreatedAt = workout.createdAt;
+              result.workoutCreatedAt = workout.createdAt
+                .toISOString()
+                .split("T")[0];
               return result;
             });
         })

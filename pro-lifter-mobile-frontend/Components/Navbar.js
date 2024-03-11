@@ -18,14 +18,14 @@ const Navbar = ({ navigation }) => {
         <Text>Graphs</Text>
         <AntDesign name="linechart" size={24} color="black" />
       </TouchableOpacity>
-      <TouchableOpacity style={styles.navItem}>
+      {/* <TouchableOpacity style={styles.navItem}>
         <Text>Analysis</Text>
         <FontAwesome5 name="dumbbell" size={24} color="black" />
       </TouchableOpacity>
       <TouchableOpacity style={styles.navItem}>
         <Text>Go</Text>
         <Text>Premium!</Text>
-      </TouchableOpacity>
+      </TouchableOpacity> */}
     </View>
   );
 };
