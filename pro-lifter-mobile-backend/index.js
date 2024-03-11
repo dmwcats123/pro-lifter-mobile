@@ -4,6 +4,7 @@ const bcrypt = require("bcrypt");
 const jwt = require("jsonwebtoken");
 const fs = require("fs");
 const path = require("path");
+const authenticateToken = require("./helpers/authenticate"); // adjust the path as necessary
 
 const app = express();
 const port = 8080;
@@ -97,6 +98,13 @@ app.post("/SignUp", async (req, res) => {
   } else {
     const user = new User({ email, password: hashedPassword });
     await user.save();
+
+    // Generate a token for the new user
+    const token = jwt.sign(
+      { userId: user._id }, // Payload to include in the token
+      process.env.JWT_SECRET, // The secret key to sign the token with
+      { expiresIn: "24h" } // Optional: set the token to expire in 24 hours
+    );
     res.status(200).json({ token, userId: user._id });
   }
 });
@@ -160,296 +168,212 @@ app.post("/SaveWorkout", async (req, res) => {
       // Save the updated user document
       await user.save();
 
-      res.json({ message: "Workout saved successfully!" });
+      res.json({ message: "Workout saved successfully!", data: req.body });
     } catch (error) {
       res.status(500).json({ message: error.message });
     }
   });
 });
 
-app.get("/workouts", async (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ message: "No token provided" });
+app.get("/workouts", authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json({ workouts: user.workouts });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-
-  const token = authHeader.split(" ")[1]; // Bearer <token>
-  jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ message: "Invalid token" });
-    }
-
-    const userId = decoded.userId;
-    try {
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      res.json({ workouts: user.workouts });
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  });
 });
 
-app.get("/templates", (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ message: "No token provided" });
+app.get("/templates", authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    res.json({ templates: user.templates });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-
-  const token = authHeader.split(" ")[1]; // Bearer <token>
-  jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ message: "Invalid token" });
-    }
-
-    const userId = decoded.userId;
-    try {
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      res.json({ templates: user.templates });
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  });
-});
-app.delete("/workouts/:id", async (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ message: "No token provided" });
-  }
-
-  const token = authHeader.split(" ")[1]; // Bearer <token>
-  jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ message: "Invalid token" });
-    }
-
-    const userId = decoded.userId;
-
-    try {
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Find the index of the workout to be removed in the user's workouts array
-      const workoutIndex = user.workouts.findIndex(
-        (workout) => workout._id.toString() === req.params.id
-      );
-
-      // If the workout is not found, return a 404 error
-      if (workoutIndex === -1) {
-        return res.status(404).json({ message: "Workout not found" });
-      }
-
-      // Remove the workout from the user's workouts array
-      user.workouts.splice(workoutIndex, 1);
-
-      // Save the user with the modified workouts array
-      await user.save();
-
-      res.json({ success: true });
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  });
 });
 
-app.post("/UpdateWorkout", async (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ message: "No token provided" });
+app.delete("/workouts/:id", authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    // Find the index of the workout to be removed in the user's workouts array
+    const workoutIndex = user.workouts.findIndex(
+      (workout) => workout._id.toString() === req.params.id
+    );
+    // If the workout is not found, return a 404 error
+    if (workoutIndex === -1) {
+      return res.status(404).json({ message: "Workout not found" });
+    }
+    // Remove the workout from the user's workouts array
+    user.workouts.splice(workoutIndex, 1);
+    // Save the user with the modified workouts array
+    await user.save();
+
+    res.json({ success: true });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-
-  const token = authHeader.split(" ")[1]; // Bearer <token>
-  jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ message: "Invalid token" });
-    }
-
-    const userId = decoded.userId;
-    const { id, workoutName, exercises } = req.body;
-
-    try {
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Find the specific workout in the user's workouts array
-      const workoutToUpdate = user.workouts.id(id);
-
-      // If the workout is not found, return a 404 error
-      if (!workoutToUpdate) {
-        return res.status(404).json({ message: "Workout not found" });
-      }
-
-      // Update the workout details
-      workoutToUpdate.workoutName = workoutName;
-      workoutToUpdate.exercises = exercises;
-
-      // Save the user with the modified workouts array
-      await user.save();
-
-      res.json({ message: "Workout updated successfully!" });
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  });
 });
 
-app.post("/SaveTemplate", async (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ message: "No token provided" });
+app.post("/UpdateWorkout", authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+
+  const { id, workoutName, exercises } = req.body;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    // Find the specific workout in the user's workouts array
+    const workoutToUpdate = user.workouts.id(id);
+
+    // If the workout is not found, return a 404 error
+    if (!workoutToUpdate) {
+      return res.status(404).json({ message: "Workout not found" });
+    }
+
+    // Update the workout details
+    workoutToUpdate.workoutName = workoutName;
+    workoutToUpdate.exercises = exercises;
+
+    // Save the user with the modified workouts array
+    await user.save();
+
+    res.json({ message: "Workout updated successfully!" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-
-  const token = authHeader.split(" ")[1];
-  jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ message: "Invalid token" });
-    }
-
-    const userId = decoded.userId;
-    try {
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      user.templates.push(req.body);
-
-      await user.save();
-
-      res.json({ message: "Template saved successfully!" });
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  });
 });
 
-// Endpoint to update an existing workout template
-app.post("/UpdateTemplate", async (req, res) => {
-  // Update logic is almost identical to the UpdateWorkout, but it updates the template.
-  // You can extract and reuse the logic as a function if there's a lot of duplication.
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ message: "No token provided" });
+app.post("/SaveTemplate", authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+
+    user.templates.push(req.body);
+
+    await user.save();
+
+    res.json({ message: "Template saved successfully!" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
   }
-
-  const token = authHeader.split(" ")[1]; // Bearer <token>
-  jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ message: "Invalid token" });
-    }
-
-    const userId = decoded.userId;
-    const { id, workoutName, exercises } = req.body;
-
-    try {
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-
-      // Find the specific workout in the user's workouts array
-      const workoutToUpdate = user.templates.id(id);
-
-      // If the workout is not found, return a 404 error
-      if (!workoutToUpdate) {
-        return res.status(404).json({ message: "Template not found" });
-      }
-
-      // Update the workout details
-      workoutToUpdate.workoutName = workoutName;
-      workoutToUpdate.exercises = exercises;
-
-      // Save the user with the modified workouts array
-      await user.save();
-
-      res.json({ message: "Workout updated successfully!" });
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  });
 });
 
-app.post("/SingleExerciseData", async (req, res) => {
-  const authHeader = req.headers.authorization;
-  if (!authHeader) {
-    return res.status(401).json({ message: "No token provided" });
-  }
+app.post("/UpdateTemplate", authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
 
-  const token = authHeader.split(" ")[1]; // Bearer <token>
-  jwt.verify(token, process.env.JWT_SECRET, async (err, decoded) => {
-    if (err) {
-      return res.status(401).json({ message: "Invalid token" });
+  const { id, workoutName, exercises } = req.body;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
-    const userId = decoded.userId;
-    try {
-      const user = await User.findById(userId);
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
-      }
-      const exercise = req.body.exerciseName;
-      const volWeightId = req.body.volWeightId;
-      const avgMaxId = req.body.avgMaxId;
-      const exerciseData = user.workouts
-        .map((workout) => {
-          return workout.exercises
-            .filter((ex) => ex.name === exercise)
-            .map((ex) => {
-              let result = {};
-              const calculateVolume = volWeightId === "vol";
-              const totalVolume = ex.weightPerSet.reduce(
-                (acc, weight, index) => acc + weight * ex.repsPerSet[index],
-                0
-              );
-              if (calculateVolume) {
-                if (avgMaxId === "avg") {
-                  result.data = //averageVol
-                    ex.weightPerSet.length > 0
-                      ? totalVolume / ex.weightPerSet.length
-                      : 0;
-                }
-                if (avgMaxId === "max") {
-                  const maxVolume = Math.max(
-                    ...ex.weightPerSet.map(
-                      (weight, index) => weight * ex.repsPerSet[index]
-                    )
-                  );
-                  result.data = maxVolume; //maxVol
-                }
-              } else {
-                if (avgMaxId === "avg") {
-                  result.data = //averageWeight
-                    ex.weightPerSet.length > 0
-                      ? totalVolume /
-                        ex.repsPerSet.reduce((acc, reps) => acc + reps, 0)
-                      : 0;
-                }
-                if (avgMaxId === "max") {
-                  const maxWeight = Math.max(...ex.weightPerSet);
-                  result.data = maxWeight; //maxWeight
-                }
+
+    // Find the specific workout in the user's workouts array
+    const workoutToUpdate = user.templates.id(id);
+
+    // If the workout is not found, return a 404 error
+    if (!workoutToUpdate) {
+      return res.status(404).json({ message: "Template not found" });
+    }
+
+    // Update the workout details
+    workoutToUpdate.workoutName = workoutName;
+    workoutToUpdate.exercises = exercises;
+
+    // Save the user with the modified workouts array
+    await user.save();
+
+    res.json({ message: "Workout updated successfully!" });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+});
+
+app.post("/SingleExerciseData", authenticateToken, async (req, res) => {
+  const userId = req.user.userId;
+
+  try {
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
+    }
+    const exercise = req.body.exerciseName;
+    const volWeightId = req.body.volWeightId;
+    const avgMaxId = req.body.avgMaxId;
+    const exerciseData = user.workouts
+      .map((workout) => {
+        return workout.exercises
+          .filter((ex) => ex.name === exercise)
+          .map((ex) => {
+            let result = {};
+            const calculateVolume = volWeightId === "vol";
+            const totalVolume = ex.weightPerSet.reduce(
+              (acc, weight, index) => acc + weight * ex.repsPerSet[index],
+              0
+            );
+            if (calculateVolume) {
+              if (avgMaxId === "avg") {
+                result.data = //averageVol
+                  ex.weightPerSet.length > 0
+                    ? totalVolume / ex.weightPerSet.length
+                    : 0;
               }
+              if (avgMaxId === "max") {
+                const maxVolume = Math.max(
+                  ...ex.weightPerSet.map(
+                    (weight, index) => weight * ex.repsPerSet[index]
+                  )
+                );
+                result.data = maxVolume; //maxVol
+              }
+            } else {
+              if (avgMaxId === "avg") {
+                result.data = //averageWeight
+                  ex.weightPerSet.length > 0
+                    ? totalVolume /
+                      ex.repsPerSet.reduce((acc, reps) => acc + reps, 0)
+                    : 0;
+              }
+              if (avgMaxId === "max") {
+                const maxWeight = Math.max(...ex.weightPerSet);
+                result.data = maxWeight; //maxWeight
+              }
+            }
 
-              result.workoutCreatedAt = workout.createdAt
-                .toISOString()
-                .split("T")[0];
-              return result;
-            });
-        })
-        .flat(); // Flatten the array if needed
-      res.json({ exerciseData });
-    } catch (error) {
-      res.status(500).json({ message: error.message });
-    }
-  });
+            result.workoutCreatedAt = workout.createdAt
+              .toISOString()
+              .split("T")[0];
+            return result;
+          });
+      })
+      .flat(); // Flatten the array if needed
+    res.json({ exerciseData });
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
 });
 
 app.listen(port, () => {

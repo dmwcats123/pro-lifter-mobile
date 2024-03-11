@@ -195,34 +195,39 @@ const NewWorkoutScreen = ({ route, navigation }) => {
       }),
     };
 
-    try {
-      // Conditional path based on whether you have a workout ID
-      let path;
-      if (isNewTemplate) {
-        path = workoutID ? "UpdateTemplate" : "SaveTemplate";
-      } else if (fromTemplate) {
-        path = "SaveWorkout";
-      } else {
-        path = workoutID ? "UpdateWorkout" : "SaveWorkout";
-      }
-      const response = await fetch(
-        `${REACT_NATIVE_API_BASE_URL}/${path}`,
-        requestOptions
-      );
-
-      // Check the response status code before assuming success
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      } else {
-        const data = await response.json();
-
-        // Consider verifying success via the 'data' object before navigation.
-        navigation.goBack(); // Or navigate to the 'Home' screen as needed.
-      }
-    } catch (error) {
-      console.error("There was an error saving the workout", error);
-      // Handle the error in UI, maybe show a toast notification or alert.
+    // Conditional path based on whether you have a workout ID
+    let path;
+    if (isNewTemplate) {
+      path = workoutID ? "UpdateTemplate" : "SaveTemplate";
+    } else if (fromTemplate) {
+      path = "SaveWorkout";
+    } else {
+      path = workoutID ? "UpdateWorkout" : "SaveWorkout";
     }
+    fetch(`${REACT_NATIVE_API_BASE_URL}/${path}`, requestOptions)
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error("Network response was not ok");
+        }
+        return response.json(); // This parses the body of the response as JSON
+      })
+      .then((data) => {
+        const workoutData = data.data;
+        const newWorkout = { ...workoutData };
+
+        // Check if the route.params has the callback, and if so, call it
+        if (route.params?.onWorkoutAdded) {
+          route.params.onWorkoutAdded(newWorkout);
+        }
+
+        navigation.goBack();
+      })
+      .catch((error) => {
+        console.error(
+          "There has been a problem with saving your workout: ",
+          error
+        );
+      });
   };
 
   return (
