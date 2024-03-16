@@ -3,7 +3,9 @@ import React, { useState, useEffect, createContext, useContext } from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createStackNavigator } from "@react-navigation/stack";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-``;
+// import { enableScreens } from "react-native-screens";
+// enableScreens();
+
 export const AuthContext = createContext();
 
 import {

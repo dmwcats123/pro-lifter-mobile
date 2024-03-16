@@ -8,6 +8,7 @@ import {
   FlatList,
   Image,
 } from "react-native";
+import { FlashList } from "@shopify/flash-list";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 
 import { REACT_NATIVE_API_BASE_URL } from "@env";
@@ -16,7 +17,7 @@ import ExerciseModal from "../Components/ExerciseModal";
 import ContextMenu from "../Components/ContextMenu";
 const NewWorkoutScreen = ({ route, navigation }) => {
   const [isVisible, setIsVisible] = useState(false);
-  const [workout, setWorkout] = useState([]);
+  const [workout, setWorkout] = useState(null);
   const [workoutName, setWorkoutName] = useState("");
   const [workoutID, setWorkoutID] = useState(null);
   const [isNewTemplate, setIsNewTemplate] = useState(null);
@@ -250,7 +251,7 @@ const NewWorkoutScreen = ({ route, navigation }) => {
         />
 
         <View>
-          <FlatList
+          <FlashList
             data={workout}
             renderItem={({ item: exercise, index: exerciseIndex }) => (
               <View style={styles.exerciseItem}>
@@ -313,7 +314,7 @@ const NewWorkoutScreen = ({ route, navigation }) => {
                       exercise.category == "strongman" ||
                       exercise.category == "powerlifting") && (
                       <>
-                        <FlatList
+                        <FlashList
                           data={exercise.repsPerSet}
                           renderItem={({ item: reps, index: setIndex }) => (
                             <View

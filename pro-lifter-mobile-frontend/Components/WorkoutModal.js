@@ -11,10 +11,6 @@ import {
 } from "react-native";
 
 function WorkoutModal({ isVisible, onClose, workout }) {
-  useEffect(() => {
-    console.log(workout);
-  }, [workout]);
-
   return (
     <Modal
       animationType="slide"

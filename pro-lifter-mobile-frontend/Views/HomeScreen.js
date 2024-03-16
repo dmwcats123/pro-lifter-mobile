@@ -15,6 +15,7 @@ import ContextMenu from "../Components/ContextMenu";
 import { useFocusEffect } from "@react-navigation/native";
 import TemplateModal from "../Components/TemplateModal";
 import Navbar from "../Components/Navbar";
+import { FlashList } from "@shopify/flash-list";
 
 const HomeScreen = ({ route, navigation }) => {
   const [workouts, setWorkouts] = useState([]);
@@ -104,7 +105,6 @@ const HomeScreen = ({ route, navigation }) => {
             navigation.navigate("NewWorkout", {
               workout: item,
               onWorkoutAdded: (newWorkout) => {
-                console.log("Here");
                 setWorkouts((currentWorkouts) => [
                   newWorkout,
                   ...currentWorkouts,
@@ -116,7 +116,11 @@ const HomeScreen = ({ route, navigation }) => {
           isSaved={true}
         />
       </View>
-      <FlatList data={item.exercises} renderItem={renderExercises} />
+      <FlashList
+        estimatedItemSize={50}
+        data={item.exercises}
+        renderItem={renderExercises}
+      />
     </TouchableOpacity>
   );
 
@@ -159,7 +163,8 @@ const HomeScreen = ({ route, navigation }) => {
         {loadingWorkouts ? (
           <ActivityIndicator size="large" color="#0000ff" />
         ) : (
-          <FlatList
+          <FlashList
+            estimatedItemSize={50}
             data={[...workouts].reverse()}
             renderItem={renderWorkouts}
             keyExtractor={(item) => item._id.toString()}
@@ -196,6 +201,7 @@ const styles = StyleSheet.create({
   },
   container: {
     flex: 1,
+    height: "100%",
     paddingHorizontal: 40,
     backgroundColor: "#f4f4f8",
   },
